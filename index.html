@@ -1,0 +1,435 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Simulador: Como configurar o ChatGPT</title>
+<style>
+  :root{
+    --bg:#212121; --bg2:#2f2f2f; --bg3:#424242; --sidebar:#171717;
+    --text:#ececec; --text2:#b4b4b4; --text3:#8e8e8e;
+    --accent:#10a37f; --border:#3a3a3a; --danger:#ef4444;
+    --tip-bg:#0f2e26; --tip-border:#10a37f;
+  }
+  *{margin:0;padding:0;box-sizing:border-box;font-family:"Segoe UI",system-ui,-apple-system,sans-serif}
+  body{background:var(--bg);color:var(--text);height:100vh;overflow:hidden}
+
+  /* Banner educativo */
+  .edu-banner{background:#7c3aed;color:#fff;text-align:center;padding:6px 12px;font-size:13px;font-weight:600}
+  .edu-banner span{opacity:.85;font-weight:400}
+
+  .app{display:flex;height:calc(100vh - 30px)}
+
+  /* Sidebar */
+  .sidebar{width:260px;background:var(--sidebar);display:flex;flex-direction:column;padding:10px;flex-shrink:0;overflow-y:auto}
+  .sb-btn{display:flex;align-items:center;gap:10px;padding:10px 12px;border-radius:10px;cursor:pointer;color:var(--text);font-size:14px;border:none;background:none;width:100%;text-align:left}
+  .sb-btn:hover{background:#212121}
+  .sb-section{margin-top:18px;font-size:12px;color:var(--text3);padding:0 12px 6px}
+  .sb-item{padding:8px 12px;border-radius:10px;cursor:pointer;font-size:14px;color:var(--text2);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+  .sb-item:hover{background:#212121}
+  .sb-item.active{background:#2a2a2a;color:var(--text)}
+  .sb-footer{margin-top:auto;border-top:1px solid var(--border);padding-top:10px}
+  .avatar{width:28px;height:28px;border-radius:50%;background:#7c3aed;display:inline-flex;align-items:center;justify-content:center;font-size:13px;font-weight:700;color:#fff;flex-shrink:0}
+
+  /* Main */
+  .main{flex:1;display:flex;flex-direction:column;overflow-y:auto;position:relative}
+  .topbar{display:flex;align-items:center;justify-content:space-between;padding:12px 20px;position:sticky;top:0;background:var(--bg);z-index:5}
+  .model-name{font-size:16px;font-weight:600;color:var(--text2)}
+  .content{flex:1;display:flex;flex-direction:column;align-items:center;justify-content:center;padding:24px;text-align:center}
+  .content h1{font-size:26px;margin-bottom:10px}
+  .content p{color:var(--text2);max-width:560px;font-size:15px;line-height:1.6}
+  .start-cards{display:flex;gap:12px;margin-top:28px;flex-wrap:wrap;justify-content:center}
+  .start-card{background:var(--bg2);border:1px solid var(--border);border-radius:14px;padding:16px 18px;width:240px;cursor:pointer;text-align:left;transition:.15s}
+  .start-card:hover{border-color:var(--accent);transform:translateY(-2px)}
+  .start-card .ic{font-size:22px}
+  .start-card b{display:block;margin:8px 0 4px;font-size:14px}
+  .start-card span{font-size:13px;color:var(--text2);line-height:1.4;display:block}
+
+  /* Modal de configurações */
+  .overlay{position:fixed;inset:0;background:rgba(0,0,0,.6);display:none;align-items:center;justify-content:center;z-index:50;padding:16px}
+  .overlay.open{display:flex}
+  .modal{background:var(--bg2);border-radius:16px;width:880px;max-width:100%;height:600px;max-height:92vh;display:flex;overflow:hidden;box-shadow:0 20px 60px rgba(0,0,0,.5)}
+  .modal-nav{width:210px;background:#262626;padding:14px 8px;flex-shrink:0;overflow-y:auto}
+  .modal-nav h3{font-size:16px;padding:6px 12px 14px}
+  .mn-item{display:flex;align-items:center;gap:10px;padding:9px 12px;border-radius:8px;cursor:pointer;font-size:14px;color:var(--text2)}
+  .mn-item:hover{background:#303030}
+  .mn-item.active{background:#3a3a3a;color:var(--text)}
+  .modal-body{flex:1;padding:22px 26px;overflow-y:auto}
+  .modal-body h2{font-size:18px;margin-bottom:4px}
+  .modal-sub{font-size:13px;color:var(--text2);margin-bottom:20px;line-height:1.5}
+  .close-x{position:absolute;top:14px;right:18px;background:none;border:none;color:var(--text2);font-size:22px;cursor:pointer}
+  .modal-wrap{position:relative}
+
+  .field{margin-bottom:22px}
+  .field-label{font-size:14px;font-weight:600;margin-bottom:4px;display:flex;align-items:center;justify-content:space-between}
+  .field-desc{font-size:12.5px;color:var(--text3);margin-bottom:8px;line-height:1.5}
+  select,textarea,input[type=text]{width:100%;background:var(--bg);border:1px solid var(--border);border-radius:10px;color:var(--text);padding:10px 12px;font-size:14px;font-family:inherit}
+  textarea{resize:vertical;min-height:90px;line-height:1.55}
+  select:focus,textarea:focus,input:focus{outline:none;border-color:var(--accent)}
+
+  /* Chips de características */
+  .chip-row{display:flex;align-items:center;justify-content:space-between;padding:10px 0;border-bottom:1px solid var(--border)}
+  .chip-row:last-child{border-bottom:none}
+  .chip-name{font-size:14px}
+  .chip-name small{display:block;color:var(--text3);font-size:12px;margin-top:2px}
+  .seg{display:flex;background:var(--bg);border:1px solid var(--border);border-radius:999px;overflow:hidden}
+  .seg button{background:none;border:none;color:var(--text2);padding:6px 14px;font-size:13px;cursor:pointer}
+  .seg button.sel{background:var(--accent);color:#fff;font-weight:600}
+
+  /* Dica */
+  .tip{background:var(--tip-bg);border:1px solid var(--tip-border);border-radius:10px;padding:10px 14px;font-size:13px;color:#c8f5e6;line-height:1.55;margin:10px 0 22px}
+  .tip b{color:#fff}
+  .copy-btn{background:var(--bg3);border:1px solid var(--border);color:var(--text);border-radius:8px;padding:4px 12px;font-size:12px;cursor:pointer}
+  .copy-btn:hover{border-color:var(--accent)}
+
+  /* Toggle */
+  .toggle-row{display:flex;align-items:flex-start;justify-content:space-between;gap:16px;padding:12px 0;border-bottom:1px solid var(--border)}
+  .toggle{width:42px;height:24px;border-radius:999px;background:var(--bg3);position:relative;cursor:pointer;flex-shrink:0;transition:.2s;border:none}
+  .toggle.on{background:var(--accent)}
+  .toggle::after{content:"";position:absolute;top:3px;left:3px;width:18px;height:18px;border-radius:50%;background:#fff;transition:.2s}
+  .toggle.on::after{left:21px}
+
+  /* Memórias */
+  .mem-item{display:flex;align-items:flex-start;justify-content:space-between;gap:12px;padding:12px 0;border-bottom:1px solid var(--border);font-size:14px;line-height:1.5}
+  .mem-del{background:none;border:none;color:var(--text3);cursor:pointer;font-size:16px;flex-shrink:0}
+  .mem-del:hover{color:var(--danger)}
+  .btn{background:var(--accent);color:#fff;border:none;border-radius:10px;padding:9px 18px;font-size:14px;cursor:pointer;font-weight:600}
+  .btn.ghost{background:var(--bg3);color:var(--text)}
+  .btn.danger{background:transparent;border:1px solid var(--danger);color:var(--danger)}
+
+  /* Projeto */
+  .proj-page{max-width:760px;width:100%;margin:0 auto;padding:10px 24px 60px;text-align:left}
+  .proj-head{display:flex;align-items:center;gap:12px;margin-bottom:6px}
+  .proj-icon{width:42px;height:42px;border-radius:12px;background:#3b5bdb;display:flex;align-items:center;justify-content:center;font-size:20px}
+  .proj-cards{display:grid;grid-template-columns:1fr 1fr;gap:14px;margin:20px 0}
+  .proj-card{background:var(--bg2);border:1px solid var(--border);border-radius:14px;padding:16px}
+  .proj-card h4{font-size:14px;margin-bottom:8px;display:flex;align-items:center;gap:8px}
+  .file-row{display:flex;align-items:center;gap:10px;padding:7px 0;font-size:13px;color:var(--text2)}
+  .file-ic{width:30px;height:30px;border-radius:8px;background:var(--bg3);display:flex;align-items:center;justify-content:center;font-size:14px;flex-shrink:0}
+  .proj-chats{margin-top:8px}
+  .proj-chat-item{padding:12px 14px;background:var(--bg2);border:1px solid var(--border);border-radius:12px;margin-bottom:8px;font-size:14px;cursor:default}
+  .proj-chat-item small{display:block;color:var(--text3);margin-top:3px;font-size:12px}
+  .fakebar{display:flex;gap:10px;background:var(--bg2);border:1px solid var(--border);border-radius:999px;padding:12px 18px;color:var(--text3);font-size:14px;margin-top:18px}
+
+  .toast{position:fixed;bottom:24px;left:50%;transform:translateX(-50%);background:var(--accent);color:#fff;padding:10px 20px;border-radius:999px;font-size:14px;font-weight:600;opacity:0;transition:.3s;pointer-events:none;z-index:99}
+  .toast.show{opacity:1}
+
+  @media (max-width:760px){
+    .sidebar{display:none}
+    .modal{flex-direction:column;height:auto}
+    .modal-nav{width:100%;display:flex;overflow-x:auto;padding:8px}
+    .modal-nav h3{display:none}
+    .mn-item{flex-shrink:0}
+    .proj-cards{grid-template-columns:1fr}
+  }
+</style>
+</head>
+<body>
+
+<div class="edu-banner">🎓 SIMULAÇÃO EDUCATIVA <span>— esta página imita as telas do ChatGPT para fins de aprendizado. Não é o site oficial da OpenAI.</span></div>
+
+<div class="app">
+  <!-- SIDEBAR -->
+  <nav class="sidebar">
+    <button class="sb-btn" onclick="goHome()">✏️ <b>Novo chat</b></button>
+    <button class="sb-btn" onclick="goHome()">🔍 Buscar em chats</button>
+
+    <div class="sb-section">Projetos</div>
+    <div class="sb-item" id="nav-proj" onclick="openProject()">📁 Planejamento Financeiro</div>
+    <div class="sb-item" style="color:var(--text3)" onclick="toast('Em um ChatGPT real, clique em + Novo projeto')">＋ Novo projeto</div>
+
+    <div class="sb-section">Chats</div>
+    <div class="sb-item">Receita de pão de queijo</div>
+    <div class="sb-item">Ideias para férias em julho</div>
+    <div class="sb-item">Revisão de e-mail profissional</div>
+
+    <div class="sb-footer">
+      <button class="sb-btn" onclick="openSettings('personalizacao')">
+        <span class="avatar">C</span>
+        <span>Claudio<br><small style="color:var(--text3)">Abrir configurações ⚙️</small></span>
+      </button>
+    </div>
+  </nav>
+
+  <!-- MAIN -->
+  <main class="main">
+    <div class="topbar">
+      <span class="model-name">ChatGPT <small style="color:var(--text3)">▾</small></span>
+      <span class="avatar" style="cursor:pointer" onclick="openSettings('personalizacao')" title="Configurações">C</span>
+    </div>
+
+    <!-- HOME -->
+    <div class="content" id="view-home">
+      <h1>Aprenda a configurar o ChatGPT</h1>
+      <p>A maioria das pessoas só faz perguntas. Mas o ChatGPT rende muito mais quando você o <b>configura</b>. Explore as telas abaixo — todas já vêm preenchidas com bons exemplos que você pode copiar e usar no ChatGPT de verdade.</p>
+      <div class="start-cards">
+        <div class="start-card" onclick="openSettings('personalizacao')">
+          <span class="ic">🎭</span><b>1. Personalização</b>
+          <span>Estilo, tom, características e instruções de como ele deve responder.</span>
+        </div>
+        <div class="start-card" onclick="openSettings('sobre')">
+          <span class="ic">👤</span><b>2. Sobre você</b>
+          <span>Quem você é, para respostas adaptadas ao seu contexto.</span>
+        </div>
+        <div class="start-card" onclick="openSettings('memoria')">
+          <span class="ic">🧠</span><b>3. Memória</b>
+          <span>O que ele lembra de você e como gerenciar isso.</span>
+        </div>
+        <div class="start-card" onclick="openProject()">
+          <span class="ic">📁</span><b>4. Projetos</b>
+          <span>Espaços com arquivos, instruções e memória próprios.</span>
+        </div>
+      </div>
+    </div>
+
+    <!-- PROJETO -->
+    <div class="content" id="view-project" style="display:none;justify-content:flex-start;align-items:stretch">
+      <div class="proj-page">
+        <div class="proj-head">
+          <div class="proj-icon">📁</div>
+          <div>
+            <h2 style="font-size:20px">Planejamento Financeiro</h2>
+            <small style="color:var(--text3)">Projeto · 3 chats · 3 arquivos</small>
+          </div>
+        </div>
+
+        <div class="tip">💡 <b>Por que usar Projetos?</b> Um projeto agrupa chats sobre o mesmo assunto e dá a eles <b>arquivos</b> e <b>instruções próprios</b>. A memória do projeto fica isolada: o ChatGPT usa só o contexto daquele projeto, sem misturar com o resto.</div>
+
+        <div class="proj-cards">
+          <div class="proj-card">
+            <h4>📄 Instruções do projeto <button class="copy-btn" style="margin-left:auto" onclick="copyText('proj-instr')">Copiar</button></h4>
+            <textarea id="proj-instr" rows="8">Você é meu consultor financeiro pessoal. Contexto: família de 4 pessoas, renda mensal de R$ 14.000, objetivo de juntar R$ 60.000 até dez/2027 para entrada de imóvel.
+
+Regras:
+- Sempre considere os valores da planilha "orcamento-familiar.xlsx".
+- Sugira cortes realistas, nunca radicais.
+- Apresente valores em reais e percentuais da renda.
+- Ao final de cada resposta, mostre o impacto no objetivo de dez/2027.</textarea>
+            <div class="field-desc" style="margin-top:8px">As instruções do projeto valem só aqui dentro e têm prioridade sobre a personalização geral da conta.</div>
+          </div>
+          <div class="proj-card">
+            <h4>📎 Arquivos do projeto</h4>
+            <div class="file-row"><span class="file-ic">📊</span> orcamento-familiar.xlsx</div>
+            <div class="file-row"><span class="file-ic">📄</span> extrato-cartao-maio.pdf</div>
+            <div class="file-row"><span class="file-ic">📝</span> metas-2026.docx</div>
+            <button class="btn ghost" style="margin-top:10px;font-size:13px" onclick="toast('No ChatGPT real, é só arrastar arquivos para cá (até 20 por projeto)')">＋ Adicionar arquivos</button>
+            <div class="field-desc" style="margin-top:10px">O ChatGPT consulta estes arquivos em qualquer chat do projeto, sem você precisar reenviá-los.</div>
+          </div>
+        </div>
+
+        <h4 style="font-size:14px;margin-bottom:10px">Chats neste projeto</h4>
+        <div class="proj-chats">
+          <div class="proj-chat-item">Cortar gastos do cartão de crédito<small>Ontem · usou orcamento-familiar.xlsx</small></div>
+          <div class="proj-chat-item">Simulação: investir R$ 1.500/mês<small>Semana passada</small></div>
+          <div class="proj-chat-item">Renegociar plano de internet<small>Maio</small></div>
+        </div>
+        <div class="fakebar">💬 Novo chat no projeto Planejamento Financeiro…</div>
+      </div>
+    </div>
+  </main>
+</div>
+
+<!-- MODAL CONFIGURAÇÕES -->
+<div class="overlay" id="settings-overlay" onclick="if(event.target===this)closeSettings()">
+  <div class="modal modal-wrap">
+    <button class="close-x" onclick="closeSettings()">✕</button>
+    <div class="modal-nav">
+      <h3>Configurações</h3>
+      <div class="mn-item" onclick="toast('Nesta simulação, o foco é a aba Personalização 😉')">⚙️ Geral</div>
+      <div class="mn-item" onclick="toast('Nesta simulação, o foco é a aba Personalização 😉')">🔔 Notificações</div>
+      <div class="mn-item" id="tab-personalizacao" onclick="showTab('personalizacao')">🎭 Personalização</div>
+      <div class="mn-item" id="tab-sobre" onclick="showTab('sobre')">👤 Sobre você</div>
+      <div class="mn-item" id="tab-memoria" onclick="showTab('memoria')">🧠 Memória</div>
+      <div class="mn-item" onclick="toast('Nesta simulação, o foco é a aba Personalização 😉')">🔒 Controles de dados</div>
+    </div>
+
+    <div class="modal-body">
+
+      <!-- ABA PERSONALIZAÇÃO -->
+      <div id="pane-personalizacao">
+        <h2>Personalização</h2>
+        <p class="modal-sub">Defina como o ChatGPT se comporta em <b>todas</b> as suas conversas.</p>
+
+        <div class="field">
+          <div class="field-label">Estilo e tom base</div>
+          <div class="field-desc">Escolha a personalidade geral das respostas. Clique e veja a descrição de cada uma.</div>
+          <select id="tone-select" onchange="toneDesc()">
+            <option value="padrao">Padrão</option>
+            <option value="profissional">Profissional</option>
+            <option value="amigavel">Amigável</option>
+            <option value="franco" selected>Franco</option>
+            <option value="excentrico">Excêntrico</option>
+            <option value="eficiente">Eficiente</option>
+            <option value="nerd">Nerd</option>
+            <option value="cinico">Cínico</option>
+          </select>
+          <div class="tip" id="tone-desc" style="margin-top:10px"></div>
+        </div>
+
+        <div class="field">
+          <div class="field-label">Características</div>
+          <div class="field-desc">Ajustes finos do humor da resposta. Cada um tem três níveis: <b>Menos · Padrão · Mais</b>. Clique para testar.</div>
+          <div id="chips"></div>
+        </div>
+
+        <div class="field">
+          <div class="field-label">Instruções personalizadas <button class="copy-btn" onclick="copyText('custom-instr')">Copiar exemplo</button></div>
+          <div class="field-desc">Regras de <b>como</b> o ChatGPT deve responder, aplicadas a toda conversa nova. É um dos campos mais poderosos e menos usados.</div>
+          <textarea id="custom-instr" rows="8">- Responda com texto corrido. Evite tópicos e listas, a não ser que eu peça.
+- Não seja otimista nem pessimista: seja realista.
+- Se não tiver certeza de um fato, diga claramente, em vez de inventar.
+- Quando eu pedir opinião, dê uma posição direta com os motivos, sem ficar em cima do muro.
+- Use português do Brasil, em linguagem simples e sem jargões.
+- Respostas curtas por padrão; aprofunde só quando eu pedir.</textarea>
+          <div class="tip">💡 <b>Dica:</b> escreva como se estivesse orientando um assistente novo no primeiro dia de trabalho. Frases curtas, uma regra por linha, sem ambiguidade.</div>
+        </div>
+      </div>
+
+      <!-- ABA SOBRE VOCÊ -->
+      <div id="pane-sobre" style="display:none">
+        <h2>Sobre você</h2>
+        <p class="modal-sub">Informações suas que o ChatGPT considera para adaptar as respostas ao seu contexto.</p>
+
+        <div class="field">
+          <div class="field-label">Como o ChatGPT deve te chamar?</div>
+          <input type="text" value="Claudio">
+        </div>
+        <div class="field">
+          <div class="field-label">O que você faz?</div>
+          <input type="text" value="Analista de logística, dou treinamentos internos sobre tecnologia">
+        </div>
+        <div class="field">
+          <div class="field-label">Mais sobre você <button class="copy-btn" onclick="copyText('about-you')">Copiar exemplo</button></div>
+          <div class="field-desc">Contexto geral: idade, família, cidade, interesses, limitações. Não inclua dados sensíveis (documentos, senhas, saúde detalhada).</div>
+          <textarea id="about-you" rows="7">Tenho 52 anos, moro em Campinas-SP, casado, dois filhos adolescentes. Sou uma pessoa visual: prefiro explicações com esquemas, tabelas e analogias. Inglês intermediário (prefiro respostas em português). Estou estudando finanças pessoais e inteligência artificial. Tenho pouco tempo livre durante a semana.</textarea>
+          <div class="tip">💡 <b>Dica:</b> diferencie os campos. <b>Sobre você</b> = quem você é. <b>Instruções personalizadas</b> = como ele deve responder. Misturar os dois reduz o efeito.</div>
+        </div>
+      </div>
+
+      <!-- ABA MEMÓRIA -->
+      <div id="pane-memoria" style="display:none">
+        <h2>Memória</h2>
+        <p class="modal-sub">O ChatGPT acumula conhecimento sobre você automaticamente, conversa após conversa.</p>
+
+        <div class="toggle-row">
+          <div>
+            <div style="font-size:14px;font-weight:600">Consultar memórias salvas</div>
+            <div class="field-desc" style="margin:4px 0 0">Permite que o ChatGPT salve e use detalhes que você compartilha. Ele decide sozinho o que salvar, mas você também pode mandar: <i>"lembre-se de que eu prefiro respostas curtas"</i>.</div>
+          </div>
+          <button class="toggle on" onclick="this.classList.toggle('on')"></button>
+        </div>
+
+        <div class="toggle-row" style="border-bottom:none">
+          <div>
+            <div style="font-size:14px;font-weight:600">Consultar histórico de chats</div>
+            <div class="field-desc" style="margin:4px 0 0">Deixa o ChatGPT consultar suas conversas anteriores para aproveitar informações, mesmo que não tenham virado memória salva.</div>
+          </div>
+          <button class="toggle on" onclick="this.classList.toggle('on')"></button>
+        </div>
+
+        <div style="margin:18px 0 10px;display:flex;align-items:center;justify-content:space-between">
+          <b style="font-size:14px">Memórias salvas (exemplos)</b>
+          <button class="btn danger" style="font-size:12px;padding:6px 12px" onclick="clearMems()">Apagar todas</button>
+        </div>
+        <div id="mem-list"></div>
+
+        <div class="tip" style="margin-top:16px">💡 <b>Como funciona:</b> a memória é alimentada <b>dentro das conversas</b>, não nesta tela. Aqui você só revisa e apaga. Para criar uma memória, diga em um chat: <i>"Lembre-se de que trabalho com logística"</i>. Revise esta lista de vez em quando — memórias erradas geram respostas erradas.</div>
+      </div>
+
+    </div>
+  </div>
+</div>
+
+<div class="toast" id="toast"></div>
+
+<script>
+const toneDescs={
+  padrao:"<b>Padrão:</b> equilibrado e neutro. Bom ponto de partida se você ainda não sabe o que prefere.",
+  profissional:"<b>Profissional:</b> formal e polido. Útil para quem usa o ChatGPT principalmente para trabalho e e-mails.",
+  amigavel:"<b>Amigável:</b> caloroso e conversado. Bom para uso pessoal e aprendizado.",
+  franco:"<b>Franco:</b> direto, sem rodeios e sem puxar o saco. Ótimo para quem quer críticas honestas ao próprio trabalho.",
+  excentrico:"<b>Excêntrico:</b> brincalhão e criativo. Bom para brainstorm e escrita criativa.",
+  eficiente:"<b>Eficiente:</b> respostas curtas e objetivas, sem enfeite. Para quem tem pressa.",
+  nerd:"<b>Nerd:</b> explora detalhes e curiosidades, adora explicar o porquê das coisas.",
+  cinico:"<b>Cínico:</b> sarcástico e crítico. Use com moderação 😄"
+};
+function toneDesc(){
+  const v=document.getElementById('tone-select').value;
+  document.getElementById('tone-desc').innerHTML="🎭 "+toneDescs[v];
+}
+
+const chips=[
+  ["Acolhimento","Quão empático e acolhedor ele soa"],
+  ["Entusiasmo","Nível de animação e energia nas respostas"],
+  ["Uso de emojis","De nenhum emoji até uso frequente"],
+  ["Elogios","Quanto ele elogia suas ideias (menos = mais crítico)"]
+];
+const chipEl=document.getElementById('chips');
+chips.forEach((c,i)=>{
+  const row=document.createElement('div');row.className='chip-row';
+  row.innerHTML=`<div class="chip-name">${c[0]}<small>${c[1]}</small></div>
+  <div class="seg" data-i="${i}">
+    <button onclick="segSel(this)">Menos</button>
+    <button class="sel" onclick="segSel(this)">Padrão</button>
+    <button onclick="segSel(this)">Mais</button>
+  </div>`;
+  chipEl.appendChild(row);
+});
+function segSel(btn){
+  btn.parentElement.querySelectorAll('button').forEach(b=>b.classList.remove('sel'));
+  btn.classList.add('sel');
+  toast('No ChatGPT real, isso muda o humor das próximas respostas');
+}
+
+const mems=[
+  "Prefere respostas em texto corrido, sem tópicos.",
+  "Trabalha com logística e dá treinamentos internos de tecnologia.",
+  "Está montando um planejamento financeiro familiar com meta para dez/2027.",
+  "É uma pessoa visual: prefere esquemas, tabelas e analogias.",
+  "Tem dois filhos adolescentes e mora em Campinas-SP."
+];
+function renderMems(){
+  const el=document.getElementById('mem-list');
+  el.innerHTML = mems.length ? "" : "<p style='color:var(--text3);font-size:14px;padding:10px 0'>Nenhuma memória salva. Converse com o ChatGPT e ele voltará a aprender sobre você.</p>";
+  mems.forEach((m,i)=>{
+    const d=document.createElement('div');d.className='mem-item';
+    d.innerHTML=`<span>${m}</span><button class="mem-del" title="Apagar esta memória" onclick="delMem(${i})">🗑</button>`;
+    el.appendChild(d);
+  });
+}
+function delMem(i){mems.splice(i,1);renderMems();toast('Memória apagada (só nesta simulação!)')}
+function clearMems(){mems.length=0;renderMems();toast('Todas as memórias foram apagadas (só aqui na simulação)')}
+
+function openSettings(tab){document.getElementById('settings-overlay').classList.add('open');showTab(tab||'personalizacao')}
+function closeSettings(){document.getElementById('settings-overlay').classList.remove('open')}
+function showTab(t){
+  ['personalizacao','sobre','memoria'].forEach(x=>{
+    document.getElementById('pane-'+x).style.display = x===t?'block':'none';
+    document.getElementById('tab-'+x).classList.toggle('active',x===t);
+  });
+}
+function openProject(){
+  closeSettings();
+  document.getElementById('view-home').style.display='none';
+  document.getElementById('view-project').style.display='flex';
+  document.getElementById('nav-proj').classList.add('active');
+}
+function goHome(){
+  closeSettings();
+  document.getElementById('view-home').style.display='flex';
+  document.getElementById('view-project').style.display='none';
+  document.getElementById('nav-proj').classList.remove('active');
+}
+function copyText(id){
+  navigator.clipboard.writeText(document.getElementById(id).value).then(()=>toast('Texto copiado! Cole no seu ChatGPT real.'));
+}
+let toastTimer;
+function toast(msg){
+  const t=document.getElementById('toast');t.textContent=msg;t.classList.add('show');
+  clearTimeout(toastTimer);toastTimer=setTimeout(()=>t.classList.remove('show'),2600);
+}
+document.addEventListener('keydown',e=>{if(e.key==='Escape')closeSettings()});
+toneDesc();renderMems();
+</script>
+</body>
+</html>
