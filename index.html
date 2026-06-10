@@ -114,6 +114,23 @@
   .toast{position:fixed;bottom:24px;left:50%;transform:translateX(-50%);background:var(--accent);color:#fff;padding:10px 20px;border-radius:999px;font-size:14px;font-weight:600;opacity:0;transition:.3s;pointer-events:none;z-index:99}
   .toast.show{opacity:1}
 
+  /* Chat */
+  .chat-page{max-width:760px;width:100%;margin:0 auto;padding:10px 24px 30px;text-align:left;display:flex;flex-direction:column;flex:1}
+  .chat-msgs{flex:1;display:flex;flex-direction:column;gap:14px;padding:10px 0;overflow-y:auto}
+  .msg{max-width:80%;padding:10px 16px;border-radius:16px;font-size:14.5px;line-height:1.55;white-space:pre-wrap}
+  .msg.user{align-self:flex-end;background:var(--bg2);border:1px solid var(--border)}
+  .msg.bot{align-self:flex-start}
+  .mem-badge{align-self:flex-start;background:var(--bg2);border:1px solid var(--accent);color:#9be8d2;font-size:12.5px;padding:4px 12px;border-radius:999px;font-weight:600}
+  .chat-bar{display:flex;gap:8px;background:var(--bg2);border:1px solid var(--border);border-radius:999px;padding:8px 8px 8px 18px;margin-top:10px}
+  .chat-bar input{background:none;border:none;flex:1;padding:6px 0}
+  .chat-bar input:focus{border:none}
+  .chat-bar .btn{border-radius:999px;padding:8px 16px}
+
+  /* Linhas bloqueadas das instruções */
+  .locked-lines{background:var(--bg);border:1px solid var(--border);border-bottom:1px dashed var(--border);border-radius:10px 10px 0 0;padding:10px 12px;font-size:14px;color:var(--text2);line-height:1.6}
+  #custom-instr{border-radius:0 0 10px 10px;border-top:none}
+  textarea[readonly],input[readonly]{color:var(--text2);cursor:not-allowed;background:#1b1b1b}
+
   @media (max-width:760px){
     .sidebar{display:none}
     .modal{flex-direction:column;height:auto}
@@ -131,7 +148,7 @@
 <div class="app">
   <!-- SIDEBAR -->
   <nav class="sidebar">
-    <button class="sb-btn" onclick="goHome()">✏️ <b>Novo chat</b></button>
+    <button class="sb-btn" onclick="openChat()">✏️ <b>Novo chat</b></button>
     <button class="sb-btn" onclick="goHome()">🔍 Buscar em chats</button>
 
     <div class="sb-section">Projetos</div>
@@ -179,6 +196,10 @@
           <span class="ic">📁</span><b>4. Projetos</b>
           <span>Espaços com arquivos, instruções e memória próprios.</span>
         </div>
+        <div class="start-card" onclick="openChat()">
+          <span class="ic">💬</span><b>5. Teste: como nasce uma memória</b>
+          <span>Converse e veja quando o ChatGPT decide salvar algo sobre você.</span>
+        </div>
       </div>
     </div>
 
@@ -198,7 +219,7 @@
         <div class="proj-cards">
           <div class="proj-card">
             <h4>📄 Instruções do projeto <button class="copy-btn" style="margin-left:auto" onclick="copyText('proj-instr')">Copiar</button></h4>
-            <textarea id="proj-instr" rows="8">Você é meu consultor financeiro pessoal. Contexto: família de 4 pessoas, renda mensal de R$ 14.000, objetivo de juntar R$ 60.000 até dez/2027 para entrada de imóvel.
+            <textarea id="proj-instr" rows="8" readonly onclick="toast('Somente leitura nesta simulação — copie e adapte no seu projeto real')">Você é meu consultor financeiro pessoal. Contexto: família de 4 pessoas, renda mensal de R$ 14.000, objetivo de juntar R$ 60.000 até dez/2027 para entrada de imóvel.
 
 Regras:
 - Sempre considere os valores da planilha "orcamento-familiar.xlsx".
@@ -224,6 +245,20 @@ Regras:
           <div class="proj-chat-item">Renegociar plano de internet<small>Maio</small></div>
         </div>
         <div class="fakebar">💬 Novo chat no projeto Planejamento Financeiro…</div>
+      </div>
+    </div>
+
+    <!-- CHAT -->
+    <div class="content" id="view-chat" style="display:none;justify-content:flex-start;align-items:stretch">
+      <div class="chat-page">
+        <div class="tip">💡 <b>Demonstração da memória:</b> em uma conversa real, o ChatGPT decide sozinho o que merece virar memória — informações duradouras sobre você, não perguntas comuns. Nesta simulação, apenas a frase <b>"Gosto de barra de cereal"</b> será salva. Digite-a, veja o aviso "Memória atualizada" e depois confira em Configurações &gt; Memória.</div>
+        <div class="chat-msgs" id="chat-msgs">
+          <div class="msg bot">Olá, Claudio! Converse comigo normalmente. Quando você contar algo relevante sobre você, eu salvo na memória. 😉</div>
+        </div>
+        <form class="chat-bar" onsubmit="sendMsg(event)">
+          <input type="text" id="chat-input" placeholder="Pergunte alguma coisa" autocomplete="off">
+          <button class="btn" type="submit" title="Enviar">➤</button>
+        </form>
       </div>
     </div>
   </main>
@@ -273,11 +308,10 @@ Regras:
         </div>
 
         <div class="field">
-          <div class="field-label">Instruções personalizadas <button class="copy-btn" onclick="copyText('custom-instr')">Copiar exemplo</button></div>
-          <div class="field-desc">Regras de <b>como</b> o ChatGPT deve responder, aplicadas a toda conversa nova. É um dos campos mais poderosos e menos usados.</div>
-          <textarea id="custom-instr" rows="8">- Responda com texto corrido. Evite tópicos e listas, a não ser que eu peça.
-- Não seja otimista nem pessimista: seja realista.
-- Se não tiver certeza de um fato, diga claramente, em vez de inventar.
+          <div class="field-label">Instruções personalizadas <button class="copy-btn" onclick="copyInstr()">Copiar exemplo</button></div>
+          <div class="field-desc">Regras de <b>como</b> o ChatGPT deve responder, aplicadas a toda conversa nova. É um dos campos mais poderosos e menos usados. As duas primeiras linhas são fixas nesta simulação (🔒): são as regras essenciais do exemplo. Edite as demais à vontade.</div>
+          <div class="locked-lines" onclick="toast('Estas duas linhas são fixas nesta simulação')">🔒 - Responda com texto corrido. Evite tópicos e listas, a não ser que eu peça.<br>🔒 - Não seja otimista nem pessimista: seja realista.</div>
+          <textarea id="custom-instr" rows="6">- Se não tiver certeza de um fato, diga claramente, em vez de inventar.
 - Quando eu pedir opinião, dê uma posição direta com os motivos, sem ficar em cima do muro.
 - Use português do Brasil, em linguagem simples e sem jargões.
 - Respostas curtas por padrão; aprofunde só quando eu pedir.</textarea>
@@ -288,20 +322,20 @@ Regras:
       <!-- ABA SOBRE VOCÊ -->
       <div id="pane-sobre" style="display:none">
         <h2>Sobre você</h2>
-        <p class="modal-sub">Informações suas que o ChatGPT considera para adaptar as respostas ao seu contexto.</p>
+        <p class="modal-sub">Informações suas que o ChatGPT considera para adaptar as respostas ao seu contexto. <b>Nesta simulação, esta página é somente leitura</b> — use o botão Copiar para levar o exemplo ao seu ChatGPT real.</p>
 
         <div class="field">
           <div class="field-label">Como o ChatGPT deve te chamar?</div>
-          <input type="text" value="Claudio">
+          <input type="text" value="Claudio" readonly onclick="toast('Somente leitura nesta simulação')">
         </div>
         <div class="field">
           <div class="field-label">O que você faz?</div>
-          <input type="text" value="Analista de logística, dou treinamentos internos sobre tecnologia">
+          <input type="text" value="Analista de logística, dou treinamentos internos sobre tecnologia" readonly onclick="toast('Somente leitura nesta simulação')">
         </div>
         <div class="field">
           <div class="field-label">Mais sobre você <button class="copy-btn" onclick="copyText('about-you')">Copiar exemplo</button></div>
           <div class="field-desc">Contexto geral: idade, família, cidade, interesses, limitações. Não inclua dados sensíveis (documentos, senhas, saúde detalhada).</div>
-          <textarea id="about-you" rows="7">Tenho 52 anos, moro em Campinas-SP, casado, dois filhos adolescentes. Sou uma pessoa visual: prefiro explicações com esquemas, tabelas e analogias. Inglês intermediário (prefiro respostas em português). Estou estudando finanças pessoais e inteligência artificial. Tenho pouco tempo livre durante a semana.</textarea>
+          <textarea id="about-you" rows="7" readonly onclick="toast('Somente leitura nesta simulação')">Tenho 52 anos, moro em Campinas-SP, casado, dois filhos adolescentes. Sou uma pessoa visual: prefiro explicações com esquemas, tabelas e analogias. Inglês intermediário (prefiro respostas em português). Estou estudando finanças pessoais e inteligência artificial. Tenho pouco tempo livre durante a semana.</textarea>
           <div class="tip">💡 <b>Dica:</b> diferencie os campos. <b>Sobre você</b> = quem você é. <b>Instruções personalizadas</b> = como ele deve responder. Misturar os dois reduz o efeito.</div>
         </div>
       </div>
@@ -408,20 +442,63 @@ function showTab(t){
     document.getElementById('tab-'+x).classList.toggle('active',x===t);
   });
 }
-function openProject(){
+function showView(v){
   closeSettings();
-  document.getElementById('view-home').style.display='none';
-  document.getElementById('view-project').style.display='flex';
-  document.getElementById('nav-proj').classList.add('active');
+  ['home','project','chat'].forEach(x=>{
+    document.getElementById('view-'+x).style.display = x===v?'flex':'none';
+  });
+  document.getElementById('nav-proj').classList.toggle('active',v==='project');
 }
-function goHome(){
-  closeSettings();
-  document.getElementById('view-home').style.display='flex';
-  document.getElementById('view-project').style.display='none';
-  document.getElementById('nav-proj').classList.remove('active');
+function openProject(){showView('project')}
+function goHome(){showView('home')}
+function openChat(){
+  showView('chat');
+  setTimeout(()=>document.getElementById('chat-input').focus(),100);
 }
+
+/* Chat: só "Gosto de barra de cereal" vira memória */
+const MEM_PHRASE='gosto de barra de cereal';
+const MEM_TEXT='Gosta de barra de cereal.';
+function addMsg(who,txt){
+  const box=document.getElementById('chat-msgs');
+  const d=document.createElement('div');d.className='msg '+who;d.textContent=txt;
+  box.appendChild(d);box.scrollTop=box.scrollHeight;
+}
+function addBadge(){
+  const box=document.getElementById('chat-msgs');
+  const b=document.createElement('div');b.className='mem-badge';
+  b.textContent='🧠 Memória atualizada';b.style.cursor='pointer';
+  b.title='Clique para ver as memórias salvas';
+  b.onclick=()=>openSettings('memoria');
+  box.appendChild(b);box.scrollTop=box.scrollHeight;
+}
+function sendMsg(e){
+  e.preventDefault();
+  const inp=document.getElementById('chat-input');
+  const txt=inp.value.trim();
+  if(!txt)return;
+  inp.value='';
+  addMsg('user',txt);
+  const norm=txt.toLowerCase().replace(/[.!?,]/g,'').replace(/\s+/g,' ').trim();
+  if(norm===MEM_PHRASE){
+    setTimeout(()=>{
+      addBadge();
+      if(!mems.includes(MEM_TEXT)){mems.push(MEM_TEXT);renderMems();}
+      addMsg('bot','Anotado, Claudio! Vou me lembrar de que você gosta de barra de cereal. Você pode conferir (e apagar) isso em Configurações > Memória — clique no aviso "Memória atualizada" acima para ver.');
+    },600);
+  }else{
+    setTimeout(()=>{
+      addMsg('bot','(Resposta simulada) Recebi sua mensagem, mas não identifiquei nada que mereça ser guardado na memória de longo prazo. Nesta demonstração, só uma frase específica é salva — experimente digitar: "Gosto de barra de cereal".');
+    },600);
+  }
+}
+
 function copyText(id){
   navigator.clipboard.writeText(document.getElementById(id).value).then(()=>toast('Texto copiado! Cole no seu ChatGPT real.'));
+}
+const LOCKED_LINES="- Responda com texto corrido. Evite tópicos e listas, a não ser que eu peça.\n- Não seja otimista nem pessimista: seja realista.\n";
+function copyInstr(){
+  navigator.clipboard.writeText(LOCKED_LINES+document.getElementById('custom-instr').value).then(()=>toast('Exemplo completo copiado (incluindo as linhas fixas)!'));
 }
 let toastTimer;
 function toast(msg){
